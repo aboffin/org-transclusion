@@ -187,6 +187,7 @@ This is for live-sync.  Analogous to
 (defvar org-transclusion-add-functions
   '(org-transclusion-add-org-id
     org-transclusion-add-org-file
+    org-transclusion-add-org-internal-link
     org-transclusion-add-other-file)
   "Define a list of functions to get a payload for transclusion.
 These function take two arguments: Org link and keyword plist,
@@ -932,6 +933,12 @@ Return nil if not found."
     (append '(:tc-type "org-link")
             (org-transclusion-content-org-link link plist))))
 
+(defun org-transclusion-add-org-internal-link (link plist)
+  (when (member (org-element-property :type link)
+                (list "coderef" "custom-id" "fuzzy" "radio"))
+    (append '(:tc-type "org-internal-link")
+            (org-transclusion-content-org-internal-link link plist))))
+
 (defun org-transclusion-add-other-file (link plist)
   "Return a list for non-Org file LINK object and PLIST.
 Return nil if not found."
@@ -1120,6 +1127,33 @@ work to
                 'only-element plist))
            (org-transclusion-content-org-buffer-or-element
             nil plist)))))))
+
+(defun org-transclusion-content-org-internal-link (link plist)
+  ;; Internal links.
+  ;; Adapted from `org-link-open'
+  ;; For types "coderef" "custom-id" "fuzzy" "radio"
+  (org-with-wide-buffer
+   (let* ((type (org-element-property :type link))
+          (path (org-element-property :path link))
+          (destination
+           (progn
+             (if (equal type "radio")
+                 (org-link--search-radio-target path)
+               (org-link-search
+                (pcase type
+                  ("custom-id" (concat "#" path))
+                  ("coderef" (format "(%s)" path))
+                  (_ path))
+                ;; Prevent fuzzy links from matching themselves.
+                (and (equal type "fuzzy")
+                     (+ 2 (org-element-property :begin link)))))
+             (point))))
+     (unless (and (<= (point-min) destination)
+                  (>= (point-max) destination))
+       (widen))
+     (goto-char destination)
+     (org-transclusion-content-org-buffer-or-element
+      'only-element plist))))
 
 (defun org-transclusion-content-org-buffer-or-element (only-element plist)
   "Return a list of playload for transclusion.
