@@ -17,7 +17,7 @@
 
 ;; Author:        Noboru Ota <me@nobiot.com>
 ;; Created:       10 October 2020
-;; Last modified: 08 May 2023
+;; Last modified: 09 May 2023
 
 ;; URL: https://github.com/nobiot/org-transclusion
 ;; Keywords: org-mode, transclusion, writing
@@ -430,8 +430,8 @@ does not support all the elements.
                      'org-transclusion-add-functions link keyword-plist))
            (tc-type (plist-get payload :tc-type))
            (src-buf (plist-get payload :src-buf))
-           (src-beg (plist-get payload :src-beg))
-           (src-end (plist-get payload :src-end))
+           (src-beg (set-marker (make-marker) (plist-get payload :src-beg) src-buf))
+           (src-end (set-marker (make-marker) (plist-get payload :src-end) src-buf))
            (src-content (plist-get payload :src-content)))
       (if (or (string= src-content "")
               (eq src-content nil))
