@@ -1451,19 +1451,24 @@ the transcluded region is large."
 (defun org-transclusion-live-sync-source-range-markers (beg end)
   "Find and return source range based on transclusion's BEG and END.
 Return \"(src-beg-mkr . src-end-mkr)\"."
-  (let ((src-buf (overlay-buffer (get-text-property (point)
-                                                    'org-transclusion-pair)))
-        (src-search-beg (org-transclusion-find-source-marker beg end)))
+  (let* ((src-ov (get-text-property (point) 'org-transclusion-pair))
+         (src-buf (overlay-buffer src-ov))
+         (src-search-beg (org-transclusion-find-source-marker beg end)))
     (if (not src-search-beg)
         (user-error "No live-sync can be started at: %d" (point))
-      (with-current-buffer src-buf
-        (goto-char src-search-beg)
-        (when-let* ((src-elem (org-transclusion-live-sync-enclosing-element))
-                    (src-beg (org-element-property :begin src-elem))
-                    (src-end (org-element-property :end src-elem)))
+      (if (equal (current-buffer) src-buf)
+          ;;; This if statement is a experiment
           (cons
-           (move-marker (make-marker) src-beg)
-           (move-marker (make-marker) src-end)))))))
+           (move-marker (make-marker) (overlay-start src-ov))
+           (move-marker (make-marker) (overlay-end src-ov)))
+        (with-current-buffer src-buf
+          (goto-char src-search-beg)
+          (when-let* ((src-elem (org-transclusion-live-sync-enclosing-element))
+                      (src-beg (org-element-property :begin src-elem))
+                      (src-end (org-element-property :end src-elem)))
+            (cons
+             (move-marker (make-marker) src-beg)
+             (move-marker (make-marker) src-end))))))))
 
 (defun org-transclusion-live-sync-source-content (beg end)
   "Return text content between BEG and END.
@@ -1658,6 +1663,16 @@ links and IDs."
               (move-marker end-mkr-at-beg beg)))
           (setq tc-ov (text-clone-make-overlay beg end))))
       (cons src-ov tc-ov))))
+
+(defun org-transclusion-live-sync-buffers-org (type)
+  "Return cons cell of overlays for source and trasnclusion.
+The cons cell to be returned is in this format:
+
+    (src-ov . tc-ov)
+
+This function uses TYPE to identify Org files to work on only Org
+links and IDs."
+  (when (org-transclusion-type-is-org type)))
 
 (defun org-transclusion-live-sync-buffers-others-default (_type)
   "Return cons cell of overlays for source and trasnclusion.
