@@ -219,7 +219,7 @@ for the range works."
   "It is a utility function used converting a keyword STRING to plist.
 It is meant to be used by `org-transclusion-get-string-to-plist'.
 It needs to be set in `org-transclusion-get-keyword-values-hook'.
-Double qutations are optional \"1-10\"."
+Double quotations are optional \"1-10\"."
   (when (string-match ":lines +\\(\"?[0-9]*-[0-9]*\"?\\)" string)
     (list :lines (org-strip-quotes (match-string 1 string)))))
 
